@@ -1,4 +1,4 @@
-(in-package :feels-like)
+(in-package :weather-widget)
 
 (defun string-trim-whitespace (string-to-trim)
   (string-trim

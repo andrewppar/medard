@@ -1,3 +1,3 @@
-(defpackage feels-like
+(defpackage weather-widget
   (:use :common-lisp)
   (:export #:main))

@@ -1,3 +1,3 @@
 (require 'asdf)
-(asdf:load-asd (pathname (truename "feels-like.asd")))
-(asdf:operate 'asdf:build-op 'feels-like)
+(asdf:load-asd (pathname (truename "weather-widget.asd")))
+(asdf:operate 'asdf:build-op 'weather-widget)
