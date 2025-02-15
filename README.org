@@ -1,0 +1,9 @@
+* Feels Like
+
+This is really just a practice project
+
+** Development
+
+1. Start a shell with =nix develop=
+2. Try calling =setup= if you don't have quicklisp installed, it will install it. If you do, make sure that it starts by default in sbcl
+3. call run - that'll start a swank server you can connect to with slime
