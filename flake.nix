@@ -38,14 +38,19 @@
             src = self ;
             buildInputs = [
               ansiweather
+              makeWrapper
               sbcl
               which
             ];
             ASDF_OUTPUT_TRANSLATIONS = "/:/";
             dontStrip = true ;
             buildPhase = ''${sbcl}/bin/sbcl --load build.lisp'' ;
-            # this should use makewrapper?
             installPhase = ''mkdir -p $out/bin; install -t $out/bin weather-widget'' ;
+            postFixup = ''
+              wrapProgram $out/bin/weather-widget --set PATH ${pkgs.lib.makeBinPath [
+                ansiweather
+              ]}
+              '' ;
           } ;
         devShells.default =
           with import nixpkgs {inherit system;} ;
