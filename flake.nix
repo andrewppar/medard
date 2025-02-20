@@ -47,7 +47,7 @@
             buildPhase = ''${sbcl}/bin/sbcl --load build.lisp'' ;
             installPhase = ''mkdir -p $out/bin; install -t $out/bin weather-widget'' ;
             postFixup = ''
-              wrapProgram $out/bin/weather-widget --set PATH ${pkgs.lib.makeBinPath [
+              makeWrapper $out/bin/weather-widget $out/bin/weather --prefix PATH ${pkgs.lib.makeBinPath [
                 ansiweather
               ]}
               '' ;
