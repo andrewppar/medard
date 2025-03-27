@@ -1,67 +1,72 @@
 {
-  description = "see what it feels like outside";
+  description = "weather in a simple format ";
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable" ;
     flake-utils.url = "github:numtide/flake-utils";
   };
   outputs = { self, nixpkgs, flake-utils, ...}:
     flake-utils.lib.eachDefaultSystem (system:
-      let cwd = builtins.toString self ;
-          pkgs = nixpkgs.legacyPackages.${system}.pkgs;
-          shell-fn = {name, commands}:
-            "function " + name + "(){" +
-            (builtins.foldl' (acc: elem: acc + " " + elem + "\n") "" commands) +
-            "}\n\n" ;
-          development-functions =
-            [(shell-fn {
-              name = "setup";
-              commands =
-                [ "curl -O https://beta.quicklisp.org/quicklisp.lisp"
-                  (builtins.foldl'
-                    (acc: elem: acc + " " + elem)
-                    ""
-                    [''sbcl --load quicklisp.lisp''
-                     '' --eval "(quicklisp-quickstart:install)"''
-                     '' --eval "(ql:add-to-init-file)"''])];})
-             (shell-fn {
-               name = "run" ;
-               commands =
-                 [
-                   ''sbcl --eval "(ql:quickload :swank)" --eval "(swank:create-server)"''
-                 ];})];
-          ansiweather = (pkgs.callPackage ./pkgs/anparisi_ansiweather/anparisi_ansiweather.nix {});
-      in  {
-        packages.default =
-          with import nixpkgs {inherit system ;} ;
-          stdenv.mkDerivation {
-            name = "weather-widget" ;
-            src = self ;
-            buildInputs = [
-              ansiweather
-              makeWrapper
-              sbcl
-              which
-            ];
-            ASDF_OUTPUT_TRANSLATIONS = "/:/";
-            dontStrip = true ;
-            buildPhase = ''${sbcl}/bin/sbcl --load build.lisp'' ;
-            installPhase = ''mkdir -p $out/bin; install -t $out/bin weather-widget'' ;
-            postFixup = ''
-              makeWrapper $out/bin/weather-widget $out/bin/weather --prefix PATH ${pkgs.lib.makeBinPath [
-                ansiweather
-              ]}
-              '' ;
-          } ;
-        devShells.default =
-          with import nixpkgs {inherit system;} ;
-          pkgs.mkShell {
-            buildInputs = [
-              sbcl
-              ansiweather
-              curl
+      let
+        pkgs = nixpkgs.legacyPackages.${system} ;
+        src = ./. ;
+        prod-sbcl = pkgs.sbcl.withPackages (packages: with packages ;
+          [cl-json dexador local-time]) ;
+        dev-sbcl = pkgs.sbcl.withPackages (packages: with packages ;
+          [cl-json dexador local-time swank]);
+        appNativeBuildInputs = with pkgs ; [
+          pkg-config makeWrapper
+        ];
+      in {
+        packages.default = pkgs.stdenv.mkDerivation {
+          pname = "medard" ;
+          dontStrip = true ;
+          version = "0.0.5" ;
+          src = src ;
+          nativeBuildInputs = appNativeBuildInputs ;
+          buildInputs = with pkgs; [ prod-sbcl ];
+          buildPhase = builtins.concatStringsSep "\n"
+            [
+              "export HOME=$(pwd)"
+              "${prod-sbcl}/bin/sbcl --load build.lisp"
             ] ;
-            shellHook = (builtins.foldl' (acc: fun: acc + fun + "\n") "" development-functions) +
-                        ''echo "welcome to weather widget...";'' ;
-          } ;
-      }) ;
+          installPhase = builtins.concatStringsSep "\n"
+            [
+              "mkdir -p $out/bin"
+              "cp -v medard $out/bin"
+              "wrapProgram $out/bin/medard --prefix LD_LIBRARY_PATH : $LD_LIBRARY_PATH"
+            ] ;
+        };
+        devShells.default =
+          with import nixpkgs { inherit system ; } ;
+          let sbcl-start = {forms}:
+                builtins.foldl'
+                  (acc: form: acc + " --eval " + "'" + form + "'")
+                  "${dev-sbcl}/bin/sbcl" forms ;
+              fn = {name, commands}:
+                "function " + name + "(){\n" +
+                (builtins.foldl' (acc: command: acc + " " + command + "\n") "" commands)
+                + "}\n\n" ;
+          in
+            pkgs.mkShell {
+              buildInputs = with pkgs; [ dev-sbcl ] ;
+              shellHook = builtins.concatStringsSep "\n"
+                [(fn {
+                  name = "run";
+                  commands = [
+                    (sbcl-start {
+                      forms = [
+                        ''(require :asdf)''
+                        ''(asdf:load-system "dexador")''
+                        ''(asdf:load-system "local-time")''
+                        ''(asdf:load-system "cl-json")''
+                        ''(asdf:load-system "swank")''
+                        ''(swank:create-server)''
+                      ];
+                    })
+                  ];
+                })
+                 ''echo " 󰅟    󰖝   󰖒  󰼶"''
+                ] ;
+            } ;
+      });
 }
