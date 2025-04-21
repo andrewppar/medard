@@ -39,7 +39,7 @@
 	  ((starts-with-p icon "sleet") "")
 	  ((starts-with-p icon "snow") "󰼶")
 	  ((starts-with-p icon "hail") "󰖒")
-	  ((starts-with-p icon "thuderstorm") "")
+	  ((starts-with-p icon "thunderstorm") "")
 	  ((starts-with-p icon "wind") "󰖝")
 	  ((starts-with-p icon "rain") "")
 	  (t icon))))
